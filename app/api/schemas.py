@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Generic, TypeVar, Optional
+from typing import Generic, TypeVar, Optional, List
 
 from pydantic import BaseModel
 
@@ -26,20 +26,27 @@ class FeedbacksSchema(BaseModel):
     updated_at: Optional[datetime] = None
 
 
-class QuestionsSchema(BaseModel):
-    id: Optional[uuid.UUID] = None
-    name: str = None
-    type: str = None
-    created_at: datetime = None
-    updated_at: Optional[datetime] = None
-
-
-class Variants(BaseModel):
+class VariantsSchema(BaseModel):
     id: Optional[uuid.UUID] = None
     name: str = None
     question_id: uuid.UUID = None
     created_at: datetime = None
     updated_at: Optional[None] = None
+
+    class Config:
+        orm_mode = True
+
+
+class QuestionsSchema(BaseModel):
+    id: uuid.UUID
+    name: str
+    type: str
+    created_at: datetime
+    updated_at: Optional[datetime]
+    variants: List[VariantsSchema]
+
+    class Config:
+        orm_mode = True
 
 
 class Response(BaseModel, Generic[T]):

@@ -2,6 +2,7 @@ import datetime
 import uuid
 
 from sqlalchemy import Column, UUID, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 
 from app.db import Base, engine
 
@@ -37,6 +38,9 @@ class Questions(Base):
     type = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(DateTime)
+    variants = relationship(
+        "Variants", back_populates="question", cascade="all, delete-orphan"
+    )
 
 
 class Variants(Base):
@@ -47,6 +51,7 @@ class Variants(Base):
     question_id = Column(UUID(as_uuid=True), ForeignKey("questions.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(DateTime)
+    question = relationship("Questions", back_populates="variants")
 
 
 Base.metadata.create_all(bind=engine)
