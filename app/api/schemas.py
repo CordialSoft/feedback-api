@@ -12,10 +12,17 @@ class UserSchema(BaseModel):
     name: str = None
     surname: str = None
     login: Optional[str] = None
+    company_logo: Optional[str] = None
+    company_name: Optional[str] = None
     password: Optional[str] = None
     role: Optional[str] = None
     created_at: datetime = None
     updated_at: Optional[datetime] = None
+
+
+class CompanySchema(BaseModel):
+    company_logo: str = None
+    company_name: str = None
 
 
 class FeedbacksSchema(BaseModel):
@@ -33,20 +40,14 @@ class VariantsSchema(BaseModel):
     created_at: datetime = None
     updated_at: Optional[None] = None
 
-    class Config:
-        orm_mode = True
-
 
 class QuestionsSchema(BaseModel):
-    id: uuid.UUID
-    name: str
-    type: str
-    created_at: datetime
-    updated_at: Optional[datetime]
-    variants: List[VariantsSchema]
-
-    class Config:
-        orm_mode = True
+    id: Optional[uuid.UUID] = None
+    name: str = None
+    type: str = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    variants: Optional[List[VariantsSchema]] = None
 
 
 class Response(BaseModel, Generic[T]):

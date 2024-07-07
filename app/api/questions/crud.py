@@ -1,29 +1,19 @@
 import datetime
 import uuid
-from typing import Optional, List
+from typing import List
 
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.api.models import Questions, Variants
-from app.api.schemas import QuestionsSchema, VariantsSchema
+from app.api.schemas import QuestionsSchema
 
 
-def get_question(
-    db: Session,
-    skip: int = 0,
-    limit: int = 10,
-    search: Optional[str] = None,
-):
-    if skip < 0:
-        skip = 0
+def get_question(db: Session):
+    return db.query(Questions).all()
 
-    query = db.query(Questions)
-    if search:
-        search = f"%{search}%"
-        query = query.filter(or_(Questions.name.ilike(search)))
 
-    return query.offset(skip * limit).limit(limit).all()
+def get_variants(db: Session, question_id: uuid.UUID):
+    return db.query(Variants).filter(Variants.question_id == question_id).all()
 
 
 def get_question_by_id(db: Session, question_id: uuid.UUID):
@@ -32,27 +22,27 @@ def get_question_by_id(db: Session, question_id: uuid.UUID):
 
 def create_question(
     db: Session,
-    question: QuestionsSchema,
-    variants: Optional[List[VariantsSchema]] = None,
+    questions: List[QuestionsSchema],
 ):
-    _question = Questions(
-        name=question.name,
-        type=question.type,
-        created_at=datetime.datetime.now(),
-    )
-    db.add(_question)
-    db.flush()
-    if variants:
-        for variant in variants:
-            _variant = Variants(
-                name=variant.name,
-                question_id=_question.id,
-                created_at=datetime.datetime.now(),
-            )
-            db.add(_variant)
-            db.flush()
-    db.commit()
-    return _question
+    for question in questions:
+        _question = Questions(
+            name=question.name,
+            type=question.type,
+            created_at=datetime.datetime.now(),
+        )
+        db.add(_question)
+        db.flush()
+
+        if question.variants:
+            for variant in question.variants:
+                _variant = Variants(
+                    name=variant.name,
+                    question_id=_question.id,
+                    created_at=datetime.datetime.now(),
+                )
+                db.add(_variant)
+                db.commit()
+        db.commit()
 
 
 def delete_question(db: Session, question_id: uuid.UUID):

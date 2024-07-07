@@ -13,6 +13,8 @@ class Users(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, index=True, nullable=False)
     surname = Column(String, index=True, nullable=False)
+    company_logo = Column(String, nullable=True)
+    company_name = Column(String, nullable=True)
     login = Column(String, nullable=True, unique=True)
     password = Column(String, nullable=True)
     role = Column(String, default="user")

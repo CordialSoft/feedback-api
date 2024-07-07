@@ -7,7 +7,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.api.models import Users
-from app.api.schemas import UserSchema
+from app.api.schemas import UserSchema, CompanySchema
 
 
 def get_user(
@@ -63,14 +63,13 @@ def delete_user(db: Session, user_id: uuid.UUID):
     db.commit()
 
 
-def update_user(db: Session, user: UserSchema, user_id: uuid.UUID):
-    _user = get_user_by_id(db=db, user_id=user_id)
-    _user.name = user.name
-    _user.surname = user.surname
-    _user.login = user.login
-    _user.password = (hashlib.sha256(user.password.encode()).hexdigest(),)
-    _user.updated_at = (datetime.datetime.now(),)
-    _user.role = user.role
+def update_user(db: Session, company: CompanySchema, user_id: uuid.UUID):
+    _company = db.query(Users).filter(Users.id == user_id).first()
+    if not _company:
+        return "not found"
+    _company.company_name = company.company_name
+    _company.company_logo = company.company_logo
+    _company.updated_at = datetime.datetime.now()
     db.commit()
-    db.refresh(_user)
-    return _user
+    db.refresh(_company)
+    return _company

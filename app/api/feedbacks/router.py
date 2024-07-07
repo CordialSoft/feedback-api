@@ -1,7 +1,11 @@
 import uuid
+from io import BytesIO
+from typing import List
 
+from openpyxl import Workbook
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
+from starlette.responses import StreamingResponse
 
 from app.api.feedbacks.crud import (
     get_feedback,
@@ -14,6 +18,38 @@ from app.db import get_db
 from app.utils.auth_middleware import get_current_user
 
 router = APIRouter()
+
+
+@router.get("/download")
+async def download_feedbacks(
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    wb = Workbook()
+    ws = wb.active
+
+    _feedback = get_feedback(db)
+    ws["A1"] = "Savol"
+    ws["B1"] = "Feedback"
+    ws["C1"] = "Vaqt"
+
+    for index, item in enumerate(_feedback):
+        ws[f"A{index + 2}"] = item[0].feedback
+        ws[f"B{index + 2}"] = item[1].name
+        ws[f"C{index + 2}"] = item[0].created_at
+
+    ws.column_dimensions["A"].width = 30
+    ws.column_dimensions["B"].width = 30
+    ws.column_dimensions["C"].width = 30
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=result.xlsx"},
+    )
 
 
 @router.get("/{feedback_id}")
@@ -30,17 +66,10 @@ async def get_feedback_by_id_route(
 
 @router.get("/")
 async def get_feedbacks_route(
-    req: Request,
     db: Session = Depends(get_db),
     _=Depends(get_current_user),
 ):
-    limit = int(req.query_params.get("results") or 10)
-    skip = int(req.query_params.get("page") or 1) - 1
-    _feedbacks = get_feedback(
-        db,
-        limit=limit,
-        skip=skip,
-    )
+    _feedbacks = get_feedback(db)
 
     return Response(
         code=200,
@@ -49,21 +78,20 @@ async def get_feedbacks_route(
         result=[
             {
                 "id": feedback.id,
-                "name": feedback.name,
-                "feedback_url": feedback.feedback_url,
+                "feedback": feedback.feedback,
+                "question": question.name,
                 "created_at": feedback.created_at,
                 "updated_at": feedback.updated_at,
             }
-            for feedback in _feedbacks
+            for feedback, question in _feedbacks
         ],
-        total=10,
-        info={"result": limit, "page": skip},
+        total=0,
     ).dict()
 
 
 @router.post("/")
 async def create_feedback_route(
-    feedback: FeedbacksSchema,
+    feedback: List[FeedbacksSchema],
     db: Session = Depends(get_db),
     _=Depends(get_current_user),
 ):
