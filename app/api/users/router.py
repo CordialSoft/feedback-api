@@ -63,6 +63,14 @@ async def get_user_by_id_route(
     return Response(code=200, status="ok", message="success", result=_user).model_dump()
 
 
+@router.get("/company")
+async def get_user_by_id_route(
+    db: Session = Depends(get_db),
+):
+    _user = get_user(db)
+    return Response(code=200, status="ok", message="success", result=_user).model_dump()
+
+
 @router.get("/{user_id}")
 async def get_user_by_id_route(
     user_id: uuid.UUID,
@@ -75,20 +83,10 @@ async def get_user_by_id_route(
 
 @router.get("/")
 async def get_users_route(
-    req: Request,
     db: Session = Depends(get_db),
     _=Depends(get_current_user),
 ):
-    limit = int(req.query_params.get("results") or 10)
-    skip = int(req.query_params.get("page") or 1) - 1
-    _users = get_user(
-        db,
-        limit=limit,
-        skip=skip,
-        order_by=req.query_params.get("order"),
-        search=req.query_params.get("search"),
-    )
-
+    _users = get_user(db)
     return Response(
         code=200,
         status="ok",
@@ -106,7 +104,6 @@ async def get_users_route(
             for user in _users
         ],
         total=10,
-        info={"result": limit, "page": skip},
     ).dict()
 
 

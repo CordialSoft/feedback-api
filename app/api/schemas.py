@@ -28,7 +28,7 @@ class CompanySchema(BaseModel):
 class FeedbacksSchema(BaseModel):
     id: Optional[uuid.UUID] = None
     feedback: str = None
-    question_id: str = None
+    question: str = None
     created_at: datetime = None
     updated_at: Optional[datetime] = None
 

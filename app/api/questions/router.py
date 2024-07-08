@@ -8,10 +8,9 @@ from app.api.schemas import Response, QuestionsSchema, VariantsSchema
 from app.api.questions.crud import (
     get_question,
     get_question_by_id,
-    create_question,
     delete_question,
     update_question,
-    get_variants,
+    get_variants, syn_question,
 )
 from app.db import get_db
 from app.utils.auth_middleware import get_current_user
@@ -35,8 +34,7 @@ async def get_question_by_id_route(
 
 @router.get("/")
 async def get_questions_route(
-    db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     _questions = get_question(db)
     return Response(
@@ -62,7 +60,7 @@ async def create_question_route(
     db: Session = Depends(get_db),
     _=Depends(get_current_user),
 ):
-    create_question(db, question)
+    syn_question(db, question)
     return Response(code=201, status="ok", message="created").dict()
 
 

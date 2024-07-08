@@ -11,28 +11,10 @@ from app.api.schemas import UserSchema, CompanySchema
 
 
 def get_user(
-    db: Session,
-    skip: int = 0,
-    limit: int = 10,
-    order_by: Optional[str] = None,
-    search: Optional[str] = None,
+    db: Session
 ):
-    if skip < 0:
-        skip = 0
-
     query = db.query(Users)
-    if search:
-        search = f"%{search}%"
-        query = query.filter(or_(Users.name.ilike(search), Users.surname.ilike(search)))
-
-    if order_by == "descend":
-        query = query.order_by(Users.name.desc())
-    elif order_by == "ascend":
-        query = query.order_by(Users.name.asc())
-    else:
-        query = query.order_by(Users.created_at.desc())
-
-    return query.offset(skip * limit).limit(limit).all()
+    return query.all()
 
 
 def count_users(db: Session):

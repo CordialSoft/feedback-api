@@ -4,16 +4,15 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
-from app.api.models import Feedbacks, Questions
+from app.api.models import Feedbacks
+from app.api.questions.crud import get_question_by_id
 from app.api.schemas import FeedbacksSchema
 
 
 def get_feedback(db: Session):
-    query = db.query(Feedbacks, Questions)
-
+    query = db.query(Feedbacks)
     return (
-        query.join(Feedbacks, Feedbacks.question_id == Questions.id)
-        .order_by(Feedbacks.created_at.desc())
+        query.order_by(Feedbacks.created_at.desc())
         .all()
     )
 
@@ -26,7 +25,7 @@ def create_feedback(db: Session, feedbacks: List[FeedbacksSchema]):
     for feedback in feedbacks:
         _feedback = Feedbacks(
             feedback=feedback.feedback,
-            question_id=uuid.UUID(feedback.question_id),
+            question=get_question_by_id(db, uuid.UUID(feedback.question)).name,
             created_at=datetime.datetime.now(),
         )
         db.add(_feedback)

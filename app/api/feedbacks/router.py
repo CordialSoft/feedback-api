@@ -34,9 +34,9 @@ async def download_feedbacks(
     ws["C1"] = "Vaqt"
 
     for index, item in enumerate(_feedback):
-        ws[f"A{index + 2}"] = item[0].feedback
-        ws[f"B{index + 2}"] = item[1].name
-        ws[f"C{index + 2}"] = item[0].created_at
+        ws[f"A{index + 2}"] = item.feedback
+        ws[f"B{index + 2}"] = item.question
+        ws[f"C{index + 2}"] = item.created_at
 
     ws.column_dimensions["A"].width = 30
     ws.column_dimensions["B"].width = 30
@@ -79,11 +79,11 @@ async def get_feedbacks_route(
             {
                 "id": feedback.id,
                 "feedback": feedback.feedback,
-                "question": question.name,
+                "question": feedback.question,
                 "created_at": feedback.created_at,
                 "updated_at": feedback.updated_at,
             }
-            for feedback, question in _feedbacks
+            for feedback in _feedbacks
         ],
         total=0,
     ).dict()
@@ -92,8 +92,7 @@ async def get_feedbacks_route(
 @router.post("/")
 async def create_feedback_route(
     feedback: List[FeedbacksSchema],
-    db: Session = Depends(get_db),
-    _=Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     create_feedback(db, feedback)
     return Response(code=201, status="ok", message="created").dict()

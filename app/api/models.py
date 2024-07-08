@@ -27,7 +27,7 @@ class Feedbacks(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     feedback = Column(String, nullable=True)
-    question_id = Column(UUID(as_uuid=True), ForeignKey("questions.id"), nullable=False)
+    question = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(DateTime)
 
