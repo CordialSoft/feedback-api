@@ -36,9 +36,9 @@ class FeedbacksSchema(BaseModel):
 class VariantsSchema(BaseModel):
     id: Optional[uuid.UUID] = None
     name: str = None
-    question_id: uuid.UUID = None
-    created_at: datetime = None
-    updated_at: Optional[None] = None
+    question_id: Optional[uuid.UUID] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class QuestionsSchema(BaseModel):

@@ -7,7 +7,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.api.models import Users
-from app.api.schemas import UserSchema, CompanySchema
+from app.api.schemas import UserSchema, CompanySchema, LoginSchema
 
 
 def get_user(
@@ -55,3 +55,15 @@ def update_user(db: Session, company: CompanySchema, user_id: uuid.UUID):
     db.commit()
     db.refresh(_company)
     return _company
+
+
+def update_login_user(db: Session, user: LoginSchema, user_id: uuid.UUID):
+    _user = db.query(Users).filter(Users.id == user_id).first()
+    if not _user:
+        return "not found"
+    _user.login = user.login
+    _user.password = hashlib.sha256(user.password.encode()).hexdigest()
+    _user.updated_at = datetime.datetime.now()
+    db.commit()
+    db.refresh(_user)
+    return _user
