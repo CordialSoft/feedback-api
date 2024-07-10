@@ -21,37 +21,31 @@ def get_question_by_id(db: Session, question_id: uuid.UUID):
 
 
 def syn_question(
-    db: Session,
-    questions: List[QuestionsSchema],
+        db: Session,
+        questions: List[QuestionsSchema],
 ):
     for question in questions:
-        if not question.id:
-            _question = Questions(
-                name=question.name,
-                type=question.type,
-                created_at=datetime.datetime.now(),
-            )
-            db.add(_question)
-            db.flush()
-            if question.variants:
-                for variant in question.variants:
-                    if not variant.id:
-                        _variant = Variants(
-                            name=variant.name,
-                            question_id=_question.id,
-                            created_at=datetime.datetime.now(),
-                        )
-                        db.add(_variant)
-                        db.commit()
-                    else:
-                        update_variant(db, variant, variant.question_id)
-        else:
-            update_question(db, question, question.id)
-            db.commit()
+        _question = Questions(
+            name=question.name,
+            type=question.type,
+            created_at=datetime.datetime.now(),
+        )
+        db.add(_question)
+        db.flush()
+        if question.variants:
+            for variant in question.variants:
+                _variant = Variants(
+                    name=variant.name,
+                    question_id=_question.id,
+                    created_at=datetime.datetime.now(),
+                )
+                db.add(_variant)
+                db.commit()
         db.commit()
 
 
 def delete_question(db: Session, question_id: uuid.UUID):
+    db.query(Variants).filter(Variants.question_id == question_id).delete()
     db.query(Questions).filter(Questions.id == question_id).delete()
     db.commit()
 
@@ -62,20 +56,19 @@ def update_question(db: Session, question: QuestionsSchema, question_id: uuid.UU
     _question.type = question.type
     if question.variants:
         for variant in question.variants:
-            if not variant.id:
-                _variant = Variants(
-                    name=variant.name,
-                    question_id=_question.id,
-                    created_at=datetime.datetime.now(),
-                )
-                db.add(_variant)
-                db.commit()
-            else:
-                update_variant(db, variant, variant.question_id)
+            _variant = Variants(
+                name=variant.name,
+                question_id=_question.id,
+                created_at=datetime.datetime.now(),
+            )
+            db.add(_variant)
+            db.commit()
+
     _question.updated_at = datetime.datetime.now()
     db.commit()
     db.refresh(_question)
     return _question
+
 
 def update_variant(db: Session, variant: VariantsSchema, question_id: uuid.UUID):
     _variant = db.query(Variants).filter(Variants.question_id == question_id).first()
