@@ -1,7 +1,8 @@
 import datetime
 import uuid
-from typing import List
+from typing import List, Optional
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.api.models import Feedbacks
@@ -9,8 +10,13 @@ from app.api.questions.crud import get_question_by_id
 from app.api.schemas import FeedbacksSchema
 
 
-def get_feedback(db: Session):
+def get_feedback(db: Session, search: Optional[str] = None):
     query = db.query(Feedbacks)
+    if search != "undefined" != 'null':
+        search = f"%{search}%"
+        query = query.filter(
+            or_(Feedbacks.feedback.ilike(search))
+        )
     return (
         query.order_by(Feedbacks.created_at.desc())
         .all()
