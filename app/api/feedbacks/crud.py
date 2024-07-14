@@ -12,7 +12,7 @@ from app.api.schemas import FeedbacksSchema
 
 def get_feedback(db: Session, search: Optional[str] = None):
     query = db.query(Feedbacks)
-    if search != "undefined" != 'null':
+    if search != "undefined" and search:
         search = f"%{search}%"
         query = query.filter(
             or_(Feedbacks.feedback.ilike(search))
