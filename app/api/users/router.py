@@ -11,7 +11,8 @@ from app.api.users.crud import (
     get_user_by_id,
     create_user,
     delete_user,
-    update_user, update_login_user,
+    update_user,
+    update_login_user,
 )
 from app.db import get_db
 from app.utils.auth_middleware import get_current_user
@@ -55,8 +56,8 @@ async def upload_file(file: UploadFile = File(...)):
 
 @router.get("/get-me")
 async def get_user_by_id_route(
-        db: Session = Depends(get_db),
-        current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     user_id = uuid.UUID(current_user["id"])
     _user = get_user_by_id(db, user_id)
@@ -65,7 +66,7 @@ async def get_user_by_id_route(
 
 @router.get("/company")
 async def get_user_by_id_route(
-        db: Session = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     _user = get_user(db)
     return Response(code=200, status="ok", message="success", result=_user).model_dump()
@@ -73,9 +74,9 @@ async def get_user_by_id_route(
 
 @router.get("/{user_id}")
 async def get_user_by_id_route(
-        user_id: uuid.UUID,
-        db: Session = Depends(get_db),
-        _=Depends(get_current_user),
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
 ):
     _user = get_user_by_id(db, user_id)
     return Response(code=200, status="ok", message="success", result=_user).model_dump()
@@ -83,8 +84,8 @@ async def get_user_by_id_route(
 
 @router.get("/")
 async def get_users_route(
-        db: Session = Depends(get_db),
-        _=Depends(get_current_user),
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
 ):
     _users = get_user(db)
     return Response(
@@ -109,9 +110,9 @@ async def get_users_route(
 
 @router.post("/")
 async def create_user_route(
-        user: UserSchema,
-        db: Session = Depends(get_db),
-        _=Depends(get_current_user),
+    user: UserSchema,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
 ):
     create_user(db, user)
     return Response(code=201, status="ok", message="created").model_dump()
@@ -119,15 +120,29 @@ async def create_user_route(
 
 @router.delete("/{user_id}")
 async def delete_user_route(
-        user_id: uuid.UUID,
-        db: Session = Depends(get_db),
-        _=Depends(get_current_user),
+    user_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
 ):
     delete_user(db, user_id)
     return Response(
         code=200,
         status="ok",
         message="deleted",
+    ).model_dump()
+
+
+@router.put("/update_company")
+async def update_user_route(
+    company: CompanySchema,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    _user = update_user(db, company, current_user["id"])
+    if _user == "not found":
+        raise HTTPException(status_code=404, detail="User not found")
+    return Response(
+        code=200, status="ok", message="updated1", result=_user
     ).model_dump()
 
 
@@ -142,29 +157,13 @@ async def delete_user_route(
 #     return Response(code=200, status="ok", message="updated", result=_user).model_dump()
 
 
-@router.put("/update_company")
-async def update_user_route(
-        company: CompanySchema,
-        db: Session = Depends(get_db),
-        current_user: dict = Depends(get_current_user),
-):
-    _user = update_user(db, company, current_user['id'])
-    if _user == 'not found':
-        raise HTTPException(status_code=404, detail="Not found")
-    return Response(
-        code=200, status="ok", message="updated1", result=_user
-    ).model_dump()
-
-
 @router.put("/update")
 async def update_user_route(
-        user: LoginSchema,
-        db: Session = Depends(get_db),
-        current_user: dict = Depends(get_current_user),
+    user: LoginSchema,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
-    _user = update_login_user(db, user, current_user['id'])
-    if _user == 'not found':
+    _user = update_login_user(db, user, current_user["id"])
+    if _user == "not found":
         raise HTTPException(status_code=404, detail="Not found")
-    return Response(
-        code=200, status="ok", message="updated", result=_user
-    ).model_dump()
+    return Response(code=200, status="ok", message="updated", result=_user).model_dump()

@@ -10,12 +10,34 @@ from app.api.questions.crud import (
     get_question_by_id,
     delete_question,
     update_question,
-    get_variants, syn_question,
+    get_variants,
+    syn_question,
+    get_question_for_table,
 )
 from app.db import get_db
 from app.utils.auth_middleware import get_current_user
 
 router = APIRouter()
+
+
+@router.get("/for-admin")
+async def get_questions_route(db: Session = Depends(get_db)):
+    _questions = get_question_for_table(db)
+    return Response(
+        code=200,
+        status="ok",
+        message="success",
+        result=[
+            {
+                "id": question.id,
+                "name": question.name,
+                "variants": get_variants(db, question.id),
+                "type": question.type,
+            }
+            for question in _questions
+        ],
+        total=10,
+    ).dict()
 
 
 @router.get("/{question_id}")
@@ -33,9 +55,7 @@ async def get_question_by_id_route(
 
 
 @router.get("/")
-async def get_questions_route(
-    db: Session = Depends(get_db)
-):
+async def get_questions_route(db: Session = Depends(get_db)):
     _questions = get_question(db)
     return Response(
         code=200,

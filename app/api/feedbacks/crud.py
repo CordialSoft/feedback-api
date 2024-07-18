@@ -2,10 +2,10 @@ import datetime
 import uuid
 from typing import List, Optional
 
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from sqlalchemy.orm import Session
 
-from app.api.models import Feedbacks
+from app.api.models import Feedbacks, Answers
 from app.api.questions.crud import get_question_by_id
 from app.api.schemas import FeedbacksSchema
 
@@ -14,13 +14,22 @@ def get_feedback(db: Session, search: Optional[str] = None):
     query = db.query(Feedbacks)
     if search != "undefined" and search:
         search = f"%{search}%"
-        query = query.filter(
-            or_(Feedbacks.feedback.ilike(search))
+        query = query.filter(or_(Feedbacks.keywords.ilike(search)))
+    return query.order_by(Feedbacks.created_at.desc()).all()
+
+
+def get_answers(db: Session, feedback_id: uuid.UUID, question_id: uuid.UUID):
+    result = (
+        db.query(Answers.feedback)
+        .filter(
+            and_(Answers.feedback_id == feedback_id, Answers.question_id == question_id)
         )
-    return (
-        query.order_by(Feedbacks.created_at.desc())
+        .order_by(Answers.created_at.asc())
         .all()
     )
+
+    feedback_list = [row.feedback for row in result]
+    return feedback_list
 
 
 def get_feedback_by_id(db: Session, feedback_id: uuid.UUID):
@@ -28,14 +37,18 @@ def get_feedback_by_id(db: Session, feedback_id: uuid.UUID):
 
 
 def create_feedback(db: Session, feedbacks: List[FeedbacksSchema]):
+    keywords = " ".join([feedback.feedback for feedback in feedbacks])
+    _feedback = Feedbacks(keywords=keywords)
+    db.add(_feedback)
+    db.commit()
     for feedback in feedbacks:
-        _feedback = Feedbacks(
-            feedback=feedback.feedback,
+        _answers = Answers(
             question=get_question_by_id(db, uuid.UUID(feedback.question)).name,
-            created_at=datetime.datetime.now(),
+            feedback=feedback.feedback,
+            feedback_id=_feedback.id,
+            question_id=feedback.question,
         )
-        db.add(_feedback)
-        db.commit()
+        db.add(_answers)
     db.commit()
 
 

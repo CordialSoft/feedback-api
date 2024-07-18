@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from sqlalchemy import Column, UUID, String, DateTime, ForeignKey
+from sqlalchemy import Column, UUID, String, DateTime, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 
 from app.db import Base, engine
@@ -26,8 +26,19 @@ class Feedbacks(Base):
     __tablename__ = "feedbacks"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    feedback = Column(String, nullable=True)
+    keywords = Column(String, index=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.now)
+    updated_at = Column(DateTime)
+
+
+class Answers(Base):
+    __tablename__ = "answers"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     question = Column(String, nullable=False)
+    feedback = Column(String, nullable=False)
+    question_id = Column(UUID(as_uuid=True), nullable=False)
+    feedback_id = Column(UUID(as_uuid=True), nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(DateTime)
 
@@ -40,6 +51,7 @@ class Questions(Base):
     type = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.now)
     updated_at = Column(DateTime)
+    state = Column(Integer, default=1)
     variants = relationship(
         "Variants", back_populates="question", cascade="all, delete-orphan"
     )

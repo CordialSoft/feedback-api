@@ -9,6 +9,10 @@ from app.api.schemas import QuestionsSchema, VariantsSchema
 
 
 def get_question(db: Session):
+    return db.query(Questions).filter(Questions.state == 1).all()
+
+
+def get_question_for_table(db: Session):
     return db.query(Questions).all()
 
 
@@ -21,8 +25,8 @@ def get_question_by_id(db: Session, question_id: uuid.UUID):
 
 
 def syn_question(
-        db: Session,
-        questions: List[QuestionsSchema],
+    db: Session,
+    questions: List[QuestionsSchema],
 ):
     for question in questions:
         _question = Questions(
@@ -45,8 +49,8 @@ def syn_question(
 
 
 def delete_question(db: Session, question_id: uuid.UUID):
-    db.query(Variants).filter(Variants.question_id == question_id).delete()
-    db.query(Questions).filter(Questions.id == question_id).delete()
+    _question = db.query(Questions).filter(Questions.id == question_id).first()
+    _question.state = 0
     db.commit()
 
 

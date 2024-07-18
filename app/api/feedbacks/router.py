@@ -12,37 +12,53 @@ from app.api.feedbacks.crud import (
     get_feedback_by_id,
     create_feedback,
     delete_feedback,
+    get_answers,
 )
+from app.api.questions.crud import get_question_for_table
 from app.api.schemas import Response, FeedbacksSchema
 from app.db import get_db
 from app.utils.auth_middleware import get_current_user
 
 router = APIRouter()
-alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
 @router.get("/download")
 async def download_feedbacks(
-        db: Session = Depends(get_db),
-        _=Depends(get_current_user),
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
 ):
     wb = Workbook()
     ws = wb.active
     _feedback = get_feedback(db)
-    questions = set([feedback.question for feedback in _feedback])
+    questions = get_question_for_table(db)
 
-    all_feedbacks = [
-            {
-                "question": data,
-                "feedback": [feedback.feedback for feedback in _feedback if feedback.question == data]
-            }
-            for data in questions]
+    for index, question in enumerate(questions):
+        ws[f"{alphabet[index]}{1}"] = question.name
 
-    for index, feedback in enumerate(all_feedbacks):
-        ws[f"{alphabet[index]}{1}"] = feedback['question']
-        ws.column_dimensions[f"{alphabet[index]}"].width = 30
-        for index2, feed in enumerate(feedback['feedback']):
-            ws[f'{alphabet[index]}{index2+2}'] = feed
+    feedbacks = [
+        {
+            "id": feedback.id,
+            "keywords": feedback.keywords,
+            "answers": [
+                {
+                    "id": question.id,
+                    "question": question.name,
+                    "feedback": get_answers(db, feedback.id, question.id),
+                }
+                for question in questions
+            ],
+        }
+        for feedback in _feedback
+    ]
+
+    for index, feedback in enumerate(feedbacks):
+        for idx, answer in enumerate(feedback["answers"]):
+            ws.column_dimensions[f"{alphabet[idx]}"].width = 30
+            if answer["feedback"]:
+                ws[f"{alphabet[idx]}{index+2}"] = answer["feedback"][0]
+            else:
+                ws[f"{alphabet[idx]}{index+2}"] = ""
 
     buffer = BytesIO()
     wb.save(buffer)
@@ -57,32 +73,40 @@ async def download_feedbacks(
 
 @router.get("/v2")
 async def get_feedbacks_route(
-        req: Request,
-        db: Session = Depends(get_db),
-        _=Depends(get_current_user),
+    req: Request,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
 ):
     _feedbacks = get_feedback(db, search=req.query_params.get("search"))
-    questions = set([feedback.question for feedback in _feedbacks])
-
+    _questions = get_question_for_table(db)
     return Response(
         code=200,
         status="ok",
         message="success",
         result=[
             {
-                "question": data,
-                "feedback": [feedback.feedback for feedback in _feedbacks if feedback.question == data]
+                "id": feedback.id,
+                "keywords": feedback.keywords,
+                "answers": [
+                    {
+                        "id": question.id,
+                        "question": question.name,
+                        "feedback": get_answers(db, feedback.id, question.id),
+                    }
+                    for question in _questions
+                ],
             }
-            for data in questions],
+            for feedback in _feedbacks
+        ],
         total=0,
     ).dict()
 
 
 @router.get("/{feedback_id}")
 async def get_feedback_by_id_route(
-        feedback_id: uuid.UUID,
-        db: Session = Depends(get_db),
-        _=Depends(get_current_user),
+    feedback_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
 ):
     _feedback = get_feedback_by_id(db, feedback_id)
     return Response(
@@ -92,8 +116,8 @@ async def get_feedback_by_id_route(
 
 @router.get("/")
 async def get_feedbacks_route(
-        db: Session = Depends(get_db),
-        _=Depends(get_current_user),
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
 ):
     _feedbacks = get_feedback(db)
 
@@ -117,8 +141,7 @@ async def get_feedbacks_route(
 
 @router.post("/")
 async def create_feedback_route(
-        feedback: List[FeedbacksSchema],
-        db: Session = Depends(get_db)
+    feedback: List[FeedbacksSchema], db: Session = Depends(get_db)
 ):
     create_feedback(db, feedback)
     return Response(code=201, status="ok", message="created").dict()
@@ -126,9 +149,9 @@ async def create_feedback_route(
 
 @router.delete("/{feedback_id}")
 async def delete_feedback_route(
-        feedback_id: uuid.UUID,
-        db: Session = Depends(get_db),
-        _=Depends(get_current_user),
+    feedback_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
 ):
     delete_feedback(db, feedback_id)
     return Response(
