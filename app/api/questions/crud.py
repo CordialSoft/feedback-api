@@ -49,8 +49,7 @@ def syn_question(
 
 
 def delete_question(db: Session, question_id: uuid.UUID):
-    _question = db.query(Questions).filter(Questions.id == question_id).first()
-    _question.state = 0
+    db.query(Questions).filter(Questions.id == question_id).delete()
     db.commit()
 
 
