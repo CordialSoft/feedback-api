@@ -2,8 +2,8 @@ import uuid
 from io import BytesIO
 from typing import List
 
-from openpyxl import Workbook
 from fastapi import APIRouter, Depends, Request
+from openpyxl import Workbook
 from sqlalchemy.orm import Session
 from starlette.responses import StreamingResponse
 
@@ -20,7 +20,6 @@ from app.db import get_db
 from app.utils.auth_middleware import get_current_user
 
 router = APIRouter()
-alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
 @router.get("/download")
@@ -28,6 +27,81 @@ async def download_feedbacks(
     db: Session = Depends(get_db),
     _=Depends(get_current_user),
 ):
+    alphabet = [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "V",
+        "W",
+        "X",
+        "Y",
+        "Z",
+        "AA",
+        "AB",
+        "AC",
+        "AD",
+        "AE",
+        "AF",
+        "AG",
+        "AH",
+        "AI",
+        "AJ",
+        "AK",
+        "AL",
+        "AM",
+        "AN",
+        "AO",
+        "AP",
+        "AQ",
+        "AR",
+        "AS",
+        "AT",
+        "AU",
+        "AV",
+        "AW",
+        "AX",
+        "AY",
+        "AZ",
+        "BA",
+        "BB",
+        "BC",
+        "BD",
+        "BE",
+        "BF",
+        "BG",
+        "BH",
+        "BI",
+        "BJ",
+        "BK",
+        "BL",
+        "BM",
+        "BN",
+        "BO",
+        "BP",
+        "BQ",
+        "BR",
+        "BS",
+        "BT",
+        "BU",
+    ]
     wb = Workbook()
     ws = wb.active
     _feedback = get_feedback(db)
@@ -35,6 +109,8 @@ async def download_feedbacks(
 
     for index, question in enumerate(questions):
         ws[f"{alphabet[index]}{1}"] = question.name
+        ws.column_dimensions[f"{alphabet[index]}"].width = len(question.name)
+    ws[f"{alphabet[len(questions)+1]}{1}"] = "Jami"
 
     feedbacks = [
         {
@@ -51,19 +127,27 @@ async def download_feedbacks(
         }
         for feedback in _feedback
     ]
-
+    count = 0
     for index, feedback in enumerate(feedbacks):
         for idx, answer in enumerate(feedback["answers"]):
-            ws.column_dimensions[f"{alphabet[idx]}"].width = 30
             if answer["feedback"]:
                 ws[f"{alphabet[idx]}{index+2}"] = answer["feedback"][0]
             else:
                 ws[f"{alphabet[idx]}{index+2}"] = ""
+        feedbacks1 = [
+            int(item)
+            for sublist in feedback["answers"]
+            for item in sublist["feedback"]
+            if item.isdigit()
+        ]
+        count += sum(feedbacks1)
+        ws[f'{alphabet[len(feedback["answers"]) + 1]}{index + 2}'] = sum(feedbacks1)
 
+    ws[f"{alphabet[len(questions)]}{len(feedbacks) + 3}"] = "Jami: "
+    ws[f"{alphabet[len(questions)+1]}{len(feedbacks) + 3}"] = count
     buffer = BytesIO()
     wb.save(buffer)
     buffer.seek(0)
-
     return StreamingResponse(
         buffer,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
